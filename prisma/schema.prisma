@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model verifications {
+  verificationId            String        @id @unique @default(uuid())
+  userId                    String
+  guildId                   String
+  ip                        String?
+  fingerprintId             String?
+  status                    status        @default(WAITING)
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  users                     users?        @relation(fields: [fingerprintsuserId], references: [userId])
+  fingerprints              fingerprints? @relation(fields: [fingerprintsFingerprintId], references: [fingerprintId])
+  fingerprintsFingerprintId String?
+  fingerprintsuserId String?
+
+}
+
+model fingerprints {
+  fingerprintId       String                @id @unique @default(uuid())
+  users               users[]
+  verifications       verifications[]
+  cookie_hash         String
+  plugin_hash         String
+  browser_hash        String
+  font_hash           String
+  device_hash         String
+  webgl_hash          String
+  audio_hash          String
+  canvas_hash         String
+  webgl_vendor        String
+  screen_resolution   String
+  fingerprintMatching fingerprintMatching[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@index([fingerprintId])
+}
+
+model users {
+  userId              String                @id @unique
+  fingerprints        fingerprints[]
+  verifications       verifications[]
+  fingerprintMatching fingerprintMatching[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+}
+
+model fingerprintMatching {
+  id            String       @id @unique @default(cuid())
+  userId        String
+  fingerprintId String
+  percentage    Float
+  user          users        @relation(fields: [userId], references: [userId])
+  fingerprint   fingerprints @relation(fields: [fingerprintId], references: [fingerprintId])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([userId, fingerprintId])
+}
+
+enum status {
+  WAITING
+  FLAGGED
+  PASSED
+  EXPIRED
+}
